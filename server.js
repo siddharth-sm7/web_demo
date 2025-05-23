@@ -51,6 +51,42 @@ io.on('connection', (socket) => {
       // Add the message to the conversation history
       session.conversation.push(message);
       console.log(`Conversation updated for session ${socket.id}`);
+      
+      // Send a mock response after 2 seconds for demo purposes
+      setTimeout(() => {
+        socket.emit('mock-response', {
+          type: 'response',
+          text: `This is a test response from LangPal! You said: "${message.text}"`
+        });
+      }, 2000);
+    }
+  });
+  
+  // Handle WebRTC signaling
+  socket.on('signal', (data) => {
+    console.log('Received signal from client', socket.id);
+    
+    // Store the signal if needed
+    const session = sessions.get(socket.id);
+    if (session) {
+      session.signal = data;
+    }
+    
+    // Send response signal back to client
+    // For demo purposes - in a real app this would relay between peers
+    socket.emit('signal', {
+      type: 'answer',
+      sdp: 'dummy-sdp-for-testing'  // Demo value
+    });
+  });
+  
+  // Handle system prompt
+  socket.on('system-prompt', ({ systemPrompt }) => {
+    console.log('Received system prompt:', systemPrompt);
+    // Store it with the session
+    const session = sessions.get(socket.id);
+    if (session) {
+      session.systemPrompt = systemPrompt;
     }
   });
   
@@ -115,6 +151,14 @@ app.get("/api/conversation/:sessionId", (req, res) => {
   }
 });
 
+// Simple endpoint to check if server is running
+app.get("/api/status", (req, res) => {
+  res.json({ status: "ok", message: "Server is running" });
+});
+
+// Serve static files from the public directory
+app.use(express.static('public'));
+
 // Render the React client
 app.use("*", async (req, res, next) => {
   const url = req.originalUrl;
@@ -122,12 +166,10 @@ app.use("*", async (req, res, next) => {
   try {
     const template = await vite.transformIndexHtml(
       url,
-      fs.readFileSync("./client/index.html", "utf-8"),
+      fs.readFileSync("index.html", "utf-8"),
     );
-    const { render } = await vite.ssrLoadModule("./client/entry-server.jsx");
-    const appHtml = await render(url);
-    const html = template.replace(`<!--ssr-outlet-->`, appHtml?.html);
-    res.status(200).set({ "Content-Type": "text/html" }).end(html);
+    
+    res.status(200).set({ "Content-Type": "text/html" }).end(template);
   } catch (e) {
     vite.ssrFixStacktrace(e);
     next(e);
@@ -137,4 +179,5 @@ app.use("*", async (req, res, next) => {
 // Start server
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
+  console.log(`Open http://localhost:${port} in your browser`);
 });
