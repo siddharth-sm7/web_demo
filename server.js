@@ -20,7 +20,7 @@ const corsOptions = {
   origin: [
     'http://localhost:3000',
     'http://localhost:5173', 
-    'https://your-frontend-domain.vercel.app', // Replace with your actual Vercel domain
+    'https://web-demo-tan-three.vercel.app/', // Replace with your actual Vercel domain
     'https://yourdomain.com' // Replace with your custom domain
   ],
   credentials: true,
