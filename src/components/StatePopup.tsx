@@ -27,28 +27,28 @@ const StatePopup: React.FC<StatePopupProps> = ({ state }) => {
   const isListening = state === 'listening';
   
   return (
-    <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+    <div className="z-50">
       <div className={`${
         isListening ? 'bg-green-100 border-green-500' : 'bg-blue-100 border-blue-500'
-      } border-l-4 rounded-lg shadow-lg py-3 px-5 flex items-center`}>
+      } border-l-4 rounded-lg shadow-lg py-2 px-4 flex items-center animate-pulse`}>
         <div className={`${
           isListening ? 'bg-green-500' : 'bg-blue-500'
-        } rounded-full p-2 mr-3`}>
+        } rounded-full p-1.5 mr-2`}>
           {isListening ? (
-            <Mic className="text-white animate-pulse" size={24} />
+            <Mic className="text-white" size={16} />
           ) : (
-            <RefreshCw className="text-white animate-spin" size={24} />
+            <RefreshCw className="text-white animate-spin" size={16} />
           )}
         </div>
         <div>
           <p className={`${
             isListening ? 'text-green-800' : 'text-blue-800'
-          } font-semibold text-lg`}>
+          } font-semibold text-sm`}>
             {isListening ? 'Listening...' : 'Processing...'}
           </p>
           <p className={`${
             isListening ? 'text-green-600' : 'text-blue-600'
-          } text-sm`}>
+          } text-xs`}>
             {isListening 
               ? 'LangPal is listening to you' 
               : 'LangPal is generating a response'}

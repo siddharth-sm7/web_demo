@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import io, { Socket } from 'socket.io-client';
-import Peer from 'simple-peer';
 import { WebRTCState, WebRTCActions } from '../types';
 
-// Fix port to match server port (3000 is the default in server.js)
 const SERVER_URL = 'http://localhost:3000';
 
 export const useWebRTC = (
@@ -17,211 +14,323 @@ export const useWebRTC = (
     error: null,
   });
   
-  const socketRef = useRef<Socket | null>(null);
-  const peerRef = useRef<Peer.Instance | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const dataChannelRef = useRef<RTCDataChannel | null>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
   
-  // Handle connection setup
+  // Accumulate text deltas to avoid fragmented messages
+  const accumulatedTextRef = useRef<string>('');
+  const accumulationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Function to handle accumulated text
+  const flushAccumulatedText = useCallback(() => {
+    if (accumulatedTextRef.current.trim()) {
+      onMessage(accumulatedTextRef.current.trim(), 'langpal');
+      accumulatedTextRef.current = '';
+    }
+    if (accumulationTimeoutRef.current) {
+      clearTimeout(accumulationTimeoutRef.current);
+      accumulationTimeoutRef.current = null;
+    }
+  }, [onMessage]);
+  
+  // Setup connection following the official OpenAI pattern
   const setupConnection = useCallback(async () => {
     try {
-      // Clear any previous errors
       setState(prev => ({ ...prev, error: null, isProcessing: true }));
       
-      // Connect to server
-      socketRef.current = io(SERVER_URL);
-      
-      // Add connection error handling
-      socketRef.current.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
-        setState(prev => ({
-          ...prev,
-          error: `Server connection error: ${error.message}. Check if server is running.`,
-          isProcessing: false
-        }));
-      });
-      
-      // First, check if server is running with a simple fetch
+      // First check if server is running
       try {
         const statusCheck = await fetch(`${SERVER_URL}/api/status`);
         if (!statusCheck.ok) {
           throw new Error('Server status check failed');
         }
-        console.log('Server status check passed');
       } catch (error) {
-        console.error('Server status check failed:', error);
         setState(prev => ({
           ...prev,
-          error: `Cannot connect to server. Make sure 'npm run server' is running.`,
+          error: 'Cannot connect to server. Make sure server is running with "npm run server".',
           isProcessing: false
         }));
         return;
       }
       
-      // Get media stream (for real microphone access)
+      // Get ephemeral token from our server
+      const tokenResponse = await fetch(`${SERVER_URL}/token`);
+      if (!tokenResponse.ok) {
+        throw new Error('Failed to get token from server');
+      }
+      
+      const data = await tokenResponse.json();
+      const EPHEMERAL_KEY = data.client_secret.value;
+      
+      // Create peer connection (following official implementation)
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:global.stun.twilio.com:3478' }
+        ]
+      });
+      
+      peerConnectionRef.current = pc;
+      
+      // Set up audio element to play remote audio from the model
+      if (!audioElementRef.current) {
+        audioElementRef.current = document.createElement("audio");
+        audioElementRef.current.autoplay = true;
+      }
+      
+      pc.ontrack = (e) => {
+        if (audioElementRef.current) {
+          audioElementRef.current.srcObject = e.streams[0];
+        }
+      };
+      
+      // Get microphone access and add local audio track with better audio settings
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        streamRef.current = stream;
-        console.log('Microphone access granted');
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 16000,
+            channelCount: 1
+          }
+        });
+        pc.addTrack(mediaStream.getTracks()[0]);
+        setState(prev => ({ ...prev, isMicActive: true }));
       } catch (micError) {
         console.error('Microphone access error:', micError);
         setState(prev => ({
           ...prev,
-          error: 'Microphone access denied. Please enable permissions in your browser.',
+          error: 'Microphone access denied. Please enable microphone permissions.',
           isProcessing: false
         }));
         return;
       }
       
-      // Setup audio processing
-      audioContextRef.current = new AudioContext();
+      // Set up data channel for sending and receiving events
+      const dc = pc.createDataChannel("oai-events");
+      dataChannelRef.current = dc;
       
-      // Wait for signaling server connection
-      socketRef.current.on('connect', () => {
-        console.log('Connected to signaling server');
+      // Handle data channel events
+      dc.addEventListener("open", () => {
+        console.log("Data channel opened");
+        setState(prev => ({ ...prev, isConnected: true, isProcessing: false }));
         
-        // Initialize peer connection
-        peerRef.current = new Peer({
-          initiator: true,
-          trickle: false,
-          stream: streamRef.current!,
-          config: {
-            iceServers: [
-              { urls: 'stun:stun.l.google.com:19302' },
-              { urls: 'stun:global.stun.twilio.com:3478' }
-            ]
+        // Send initial system prompt with explicit English language settings
+        const systemEvent = {
+          type: "session.update",
+          session: {
+            instructions: systemPrompt,
+            voice: "verse",
+            input_audio_format: "pcm16",
+            output_audio_format: "pcm16",
+            input_audio_transcription: {
+              model: "whisper-1",
+              language: "en"
+            },
+            turn_detection: {
+              type: "server_vad",
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 500
+            }
           }
-        });
+        };
         
-        // Send system prompt to server
-        socketRef.current!.emit('system-prompt', { systemPrompt });
-        
-        // Handle successful connection
-        peerRef.current.on('signal', (data) => {
-          console.log('Local signal generated, sending to server');
-          socketRef.current!.emit('signal', data);
-        });
-        
-        // Handle incoming data
-        peerRef.current.on('data', (data) => {
-          const message = JSON.parse(data.toString());
-          if (message.type === 'transcript') {
-            onMessage(message.text, 'user');
-          } else if (message.type === 'response') {
-            onMessage(message.text, 'langpal');
-          }
-        });
-        
-        // Handle mock responses from server (for demo)
-        socketRef.current!.on('mock-response', (data) => {
-          console.log('Received mock response from server:', data);
-          if (data.type === 'response') {
-            onMessage(data.text, 'langpal');
-          }
-        });
-        
-        // Handle incoming signal from server
-        socketRef.current!.on('signal', (data) => {
-          console.log('Received signal from server');
-          peerRef.current!.signal(data);
-        });
-        
-        peerRef.current.on('connect', () => {
-          console.log('Peer connection established');
-          
-          // Demo: Generate a fake transcript after connection
-          setTimeout(() => {
-            onMessage("Hello! I'm ready to chat with LangPal!", 'user');
-            
-            // Let the server generate a response
-            socketRef.current!.emit('conversation-update', {
-              text: "Hello! I'm ready to chat with LangPal!",
-              sender: 'user',
-              timestamp: new Date()
-            });
-          }, 1000);
-          
-          setState(prev => ({ 
-            ...prev, 
-            isConnected: true, 
-            isMicActive: true,
-            isProcessing: false 
-          }));
-        });
-        
-        // Handle errors
-        peerRef.current.on('error', (err) => {
-          console.error('Peer error:', err);
-          setState(prev => ({ 
-            ...prev, 
-            error: 'WebRTC connection error. Please try again.' 
-          }));
-        });
+        sendEvent(systemEvent);
       });
       
-      // Handle server errors
-      socketRef.current.on('error', (error) => {
-        console.error('Socket error:', error);
-        setState(prev => ({ 
-          ...prev, 
-          error: 'Server connection error. Please try again.',
-          isProcessing: false 
-        }));
-      });
-      
-      // For demo purposes only: Simulate successful connection after 5 seconds
-      // This is a fallback if the WebRTC connection doesn't succeed
-      setTimeout(() => {
-        if (!state.isConnected && !state.error) {
-          console.log('Simulating successful connection for demo');
-          setState(prev => ({ 
-            ...prev, 
-            isConnected: true, 
-            isProcessing: false 
-          }));
+      dc.addEventListener("message", (e) => {
+        try {
+          const event = JSON.parse(e.data);
+          console.log("Received event:", event.type, event);
           
-          // Generate a fake user message
-          setTimeout(() => {
-            onMessage("Hello! I'm testing LangPal!", 'user');
-            
-            // Simulate LangPal response
-            setTimeout(() => {
-              onMessage("Hi there! I'm LangPal, your friendly teddy bear companion. How can I help you today?", 'langpal');
-            }, 2000);
-          }, 1000);
+          // Handle different event types
+          switch (event.type) {
+            case "conversation.item.input_audio_transcription.completed":
+              if (event.transcript) {
+                console.log("Transcribed text:", event.transcript);
+                
+                // Simple filter to reject very short or non-English looking transcriptions
+                const transcript = event.transcript.trim();
+                if (transcript.length > 2 && /^[a-zA-Z0-9\s.,!?'-]+$/.test(transcript)) {
+                  onMessage(transcript, 'user');
+                } else {
+                  console.log("Rejected transcription (likely not English or too short):", transcript);
+                }
+              }
+              break;
+              
+            case "response.audio_transcript.delta":
+              if (event.delta) {
+                // Accumulate text deltas instead of sending immediately
+                accumulatedTextRef.current += event.delta;
+                
+                // Clear existing timeout and set a new one
+                if (accumulationTimeoutRef.current) {
+                  clearTimeout(accumulationTimeoutRef.current);
+                }
+                
+                // Flush accumulated text after 500ms of silence
+                accumulationTimeoutRef.current = setTimeout(() => {
+                  flushAccumulatedText();
+                }, 500);
+              }
+              break;
+              
+            case "response.text.delta":
+              if (event.delta) {
+                // Accumulate text deltas instead of sending immediately
+                accumulatedTextRef.current += event.delta;
+                
+                // Clear existing timeout and set a new one
+                if (accumulationTimeoutRef.current) {
+                  clearTimeout(accumulationTimeoutRef.current);
+                }
+                
+                // Flush accumulated text after 500ms of silence
+                accumulationTimeoutRef.current = setTimeout(() => {
+                  flushAccumulatedText();
+                }, 500);
+              }
+              break;
+              
+            case "response.done":
+              console.log("Response completed");
+              // Flush any remaining accumulated text
+              flushAccumulatedText();
+              break;
+              
+            case "response.created":
+              // Clear accumulated text when starting new response
+              accumulatedTextRef.current = '';
+              if (accumulationTimeoutRef.current) {
+                clearTimeout(accumulationTimeoutRef.current);
+                accumulationTimeoutRef.current = null;
+              }
+              break;
+              
+            case "error":
+              console.error("OpenAI API error:", event.error);
+              setState(prev => ({ ...prev, error: event.error.message || 'API error occurred' }));
+              break;
+          }
+        } catch (error) {
+          console.error("Error parsing message:", error);
         }
-      }, 5000);
+      });
+      
+      dc.addEventListener("error", (error) => {
+        console.error("Data channel error:", error);
+        setState(prev => ({ ...prev, error: 'Data channel error occurred' }));
+      });
+      
+      // Create offer and set local description
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      
+      // Send offer to OpenAI Realtime API
+      const baseUrl = "https://api.openai.com/v1/realtime";
+      const model = "gpt-4o-realtime-preview-2024-12-17";
+      const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
+        method: "POST",
+        body: offer.sdp,
+        headers: {
+          Authorization: `Bearer ${EPHEMERAL_KEY}`,
+          "Content-Type": "application/sdp",
+        },
+      });
+      
+      if (!sdpResponse.ok) {
+        throw new Error(`SDP exchange failed: ${sdpResponse.status} ${sdpResponse.statusText}`);
+      }
+      
+      const answer = {
+        type: "answer" as RTCSdpType,
+        sdp: await sdpResponse.text(),
+      };
+      
+      await pc.setRemoteDescription(answer);
+      
+      // Handle connection state changes
+      pc.onconnectionstatechange = () => {
+        console.log("Connection state:", pc.connectionState);
+        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+          setState(prev => ({ ...prev, error: 'Connection failed', isConnected: false }));
+        }
+      };
       
     } catch (error) {
       console.error('WebRTC setup error:', error);
       setState(prev => ({ 
         ...prev, 
-        error: 'Failed to setup connection. ' + (error instanceof Error ? error.message : 'Please try again.'),
+        error: `Failed to setup connection: ${error instanceof Error ? error.message : 'Unknown error'}`,
         isProcessing: false 
       }));
     }
-  }, [onMessage, systemPrompt, state.isConnected]);
+  }, [onMessage, systemPrompt, flushAccumulatedText]);
+  
+  // Send event to OpenAI
+  const sendEvent = useCallback((event: any) => {
+    if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+      event.event_id = event.event_id || crypto.randomUUID();
+      dataChannelRef.current.send(JSON.stringify(event));
+      console.log("Sent event:", event.type, event);
+      return true;
+    }
+    return false;
+  }, []);
+  
+  // Send text message
+  const sendTextMessage = useCallback((message: string) => {
+    const event = {
+      type: "conversation.item.create",
+      item: {
+        type: "message",
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: message,
+          },
+        ],
+      },
+    };
+    
+    if (sendEvent(event)) {
+      sendEvent({ type: "response.create" });
+    }
+  }, [sendEvent]);
   
   // Cleanup function
   const cleanup = useCallback(() => {
-    if (peerRef.current) {
-      peerRef.current.destroy();
-      peerRef.current = null;
+    // Clear any pending text accumulation
+    if (accumulationTimeoutRef.current) {
+      clearTimeout(accumulationTimeoutRef.current);
+      accumulationTimeoutRef.current = null;
+    }
+    accumulatedTextRef.current = '';
+    
+    if (dataChannelRef.current) {
+      dataChannelRef.current.close();
+      dataChannelRef.current = null;
     }
     
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
+    if (peerConnectionRef.current) {
+      // Stop all tracks
+      peerConnectionRef.current.getSenders().forEach((sender) => {
+        if (sender.track) {
+          sender.track.stop();
+        }
+      });
+      
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
     }
     
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
+    if (audioElementRef.current) {
+      audioElementRef.current.srcObject = null;
     }
     
     setState({
@@ -245,11 +354,14 @@ export const useWebRTC = (
   
   // Toggle microphone
   const toggleMic = useCallback(() => {
-    if (!streamRef.current) return;
+    if (!peerConnectionRef.current) return;
     
     const newMicState = !state.isMicActive;
-    streamRef.current.getAudioTracks().forEach(track => {
-      track.enabled = newMicState;
+    
+    peerConnectionRef.current.getSenders().forEach(sender => {
+      if (sender.track && sender.track.kind === 'audio') {
+        sender.track.enabled = newMicState;
+      }
     });
     
     setState(prev => ({ ...prev, isMicActive: newMicState }));

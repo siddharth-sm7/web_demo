@@ -1,20 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useConversation } from './hooks/useConversation';
 import { useWebRTC } from './hooks/useWebRTC';
 import ChatInterface from './components/ChatInterface';
 import { simulateResponse } from './utils/mockDataHandler';
 import StatePopup from './components/StatePopup';
 
-// Default system prompt for the teddy bear
+// Default system prompt for the teddy bear with explicit English instruction
 const DEFAULT_SYSTEM_PROMPT = 
   "You are LangPal, a friendly AI teddy bear designed to help children learn languages. " +
   "Keep your responses simple, encouraging, and suitable for young learners. " +
   "Focus on basic vocabulary, simple phrases, and gentle pronunciation guidance. " +
-  "Be patient, enthusiastic, and always maintain a positive, supportive tone.";
+  "Be patient, enthusiastic, and always maintain a positive, supportive tone. " +
+  "Respond with short, clear sentences that are easy for children to understand. " +
+  "Always respond in English and assume the user is speaking English unless they specifically ask to practice another language. " +
+  "If you hear unclear audio, ask the user to repeat their question in English.";
 
 function App() {
   const [demoMode, setDemoMode] = useState(false);
   const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const imageRef = useRef<HTMLImageElement>(null);
   
   const {
     messages,
@@ -29,6 +33,15 @@ function App() {
   const [webrtcState, webrtcActions] = useWebRTC(
     (text, sender) => {
       addMessage(text, sender);
+      
+      // Update robot state based on message
+      if (sender === 'user') {
+        setRobotState('thinking');
+        setTimeout(() => setRobotState('listening'), 1000);
+      } else if (sender === 'langpal') {
+        setRobotState('speaking');
+        setTimeout(() => setRobotState('listening'), 2000);
+      }
       
       // In demo mode, generate a response to user messages
       if (demoMode && sender === 'user') {
@@ -50,17 +63,17 @@ function App() {
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/status');
+        const response = await fetch('/api/status');
         if (response.ok) {
           setServerStatus('online');
         } else {
           setServerStatus('offline');
-          setDemoMode(true); // Auto-enable demo mode if server is offline
+          setDemoMode(true);
         }
       } catch (error) {
         console.log('Server appears to be offline, enabling demo mode');
         setServerStatus('offline');
-        setDemoMode(true); // Auto-enable demo mode if server is offline
+        setDemoMode(true);
       }
     };
     
@@ -76,7 +89,7 @@ function App() {
       setTimeout(() => {
         setRobotState('speaking');
         addMessage("Hi there! I'm LangPal, your friendly teddy bear language tutor! What language would you like to practice today?", 'langpal');
-        setTimeout(() => setRobotState('listening'), 500);
+        setTimeout(() => setRobotState('listening'), 1000);
       }, 1500);
     } else {
       // Use WebRTC in normal mode
@@ -127,14 +140,30 @@ function App() {
       )}
       
       {/* Main content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Left panel - Image */}
-        <div className="w-full md:w-1/2 h-full flex items-center justify-center bg-white p-8">
+        <div className="w-full md:w-1/2 h-full flex items-center justify-center bg-white p-8 relative">
           <img 
+            ref={imageRef}
             src="/images/teddy.png" 
             alt="LangPal Teddy"
             className="max-w-full max-h-full object-contain"
+            onError={(e) => {
+              // Fallback to a placeholder if image doesn't exist
+              e.currentTarget.style.display = 'none';
+              const placeholder = document.createElement('div');
+              placeholder.className = 'w-64 h-64 bg-amber-200 rounded-3xl flex items-center justify-center';
+              placeholder.innerHTML = '<div class="text-6xl">🧸</div>';
+              e.currentTarget.parentElement!.appendChild(placeholder);
+            }}
           />
+          
+          {/* State popup positioned near teddy bear's right ear */}
+          {isConnected && (
+            <div className="absolute top-32 right-16 md:top-24 md:right-20">
+              <StatePopup state={robotState} />
+            </div>
+          )}
         </div>
         
         {/* Right panel - Chat interface */}
@@ -154,15 +183,11 @@ function App() {
         </div>
       </div>
       
-      {/* State popup for listening/processing */}
-      {isConnected && (
-        <StatePopup state={robotState} />
-      )}
-      
       {/* Error notification */}
       {webrtcState.error && !demoMode && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
-          {webrtcState.error}
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg max-w-md text-center">
+          <p className="font-medium">Connection Error</p>
+          <p className="text-sm">{webrtcState.error}</p>
         </div>
       )}
     </div>
