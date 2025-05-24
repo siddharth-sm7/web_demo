@@ -1,7 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { WebRTCState, WebRTCActions } from '../types';
 
-const SERVER_URL = 'http://localhost:3000';
+// Server URL configuration - Update these with your actual domains
+const getServerUrl = () => {
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:10000'; // Local Render development
+  }
+  
+  // Production - Replace with your actual Render service URL
+  return 'https://web-demo-daja.onrender.com'; // UPDATE THIS!
+};
+
+const SERVER_URL = getServerUrl();
 
 export const useWebRTC = (
   onMessage: (text: string, sender: 'user' | 'langpal') => void,
@@ -39,29 +49,35 @@ export const useWebRTC = (
     try {
       setState(prev => ({ ...prev, error: null, isProcessing: true }));
       
+      console.log('Connecting to server:', SERVER_URL);
+      
       // First check if server is running
       try {
         const statusCheck = await fetch(`${SERVER_URL}/api/status`);
         if (!statusCheck.ok) {
-          throw new Error('Server status check failed');
+          throw new Error(`Server status check failed: ${statusCheck.status}`);
         }
+        console.log('Server status check passed');
       } catch (error) {
+        console.error('Server connection error:', error);
         setState(prev => ({
           ...prev,
-          error: 'Cannot connect to server. Make sure server is running with "npm run server".',
+          error: 'Cannot connect to backend server. Please check if the Render service is running.',
           isProcessing: false
         }));
         return;
       }
       
       // Get ephemeral token from our server
-      const tokenResponse = await fetch(`${SERVER_URL}/token`);
+      const tokenResponse = await fetch(`${SERVER_URL}/api/token`);
       if (!tokenResponse.ok) {
-        throw new Error('Failed to get token from server');
+        const errorText = await tokenResponse.text();
+        throw new Error(`Failed to get token: ${tokenResponse.status} ${errorText}`);
       }
       
       const data = await tokenResponse.json();
       const EPHEMERAL_KEY = data.client_secret.value;
+      console.log('Token obtained successfully');
       
       // Create peer connection (following official implementation)
       const pc = new RTCPeerConnection({
@@ -98,6 +114,7 @@ export const useWebRTC = (
         });
         pc.addTrack(mediaStream.getTracks()[0]);
         setState(prev => ({ ...prev, isMicActive: true }));
+        console.log('Microphone access granted');
       } catch (micError) {
         console.error('Microphone access error:', micError);
         setState(prev => ({
@@ -252,6 +269,7 @@ export const useWebRTC = (
       };
       
       await pc.setRemoteDescription(answer);
+      console.log('WebRTC connection established with OpenAI');
       
       // Handle connection state changes
       pc.onconnectionstatechange = () => {

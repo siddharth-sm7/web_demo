@@ -1,6 +1,5 @@
 import express from "express";
-import fs from "fs";
-import { createServer as createViteServer } from "vite";
+import cors from "cors";
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -8,28 +7,58 @@ dotenv.config();
 
 // Create Express app
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 10000; // Render uses port 10000 by default
 const apiKey = process.env.OPENAI_API_KEY;
 
 if (!apiKey) {
-  console.error("OPENAI_API_KEY is required. Please set it in your .env file");
+  console.error("OPENAI_API_KEY is required. Please set it in Render environment variables");
   process.exit(1);
 }
 
-// Configure Vite middleware for React client
-const vite = await createViteServer({
-  server: { middlewareMode: true },
-  appType: "custom",
-});
-app.use(vite.middlewares);
+// CORS configuration for production
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:5173', 
+    'https://your-frontend-domain.vercel.app', // Replace with your actual Vercel domain
+    'https://yourdomain.com' // Replace with your custom domain
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
-// API route for token generation (matches official implementation)
-app.get("/token", async (req, res) => {
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    message: 'LangPal server is running on Render',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'production'
+  });
+});
+
+// Status endpoint for compatibility
+app.get('/api/status', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    message: 'LangPal server is running on Render',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'production'
+  });
+});
+
+// API route for token generation
+app.get('/api/token', async (req, res) => {
   try {
     // Get voice and language preferences from query parameters
     const voice = req.query.voice || "verse";
     const language = req.query.language || "english";
+    
+    console.log(`Generating token with voice: ${voice}, language: ${language}`);
     
     // Create ephemeral session with OpenAI
     const response = await fetch(
@@ -47,42 +76,61 @@ app.get("/token", async (req, res) => {
       },
     );
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("OpenAI API error:", response.status, errorText);
+      return res.status(response.status).json({ 
+        error: `OpenAI API error: ${response.status} ${response.statusText}` 
+      });
+    }
+
     const data = await response.json();
-    res.json(data);
+    console.log("Token generated successfully");
+    
+    res.status(200).json(data);
   } catch (error) {
     console.error("Token generation error:", error);
-    res.status(500).json({ error: "Failed to generate token" });
+    res.status(500).json({ 
+      error: "Failed to generate token",
+      details: error.message 
+    });
   }
 });
 
-// Simple endpoint to check if server is running
-app.get("/api/status", (req, res) => {
-  res.json({ status: "ok", message: "Server is running" });
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: 'LangPal API Server',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      status: '/api/status',
+      token: '/api/token'
+    }
+  });
 });
 
-// Serve static files from the public directory
-app.use(express.static('public'));
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: err.message 
+  });
+});
 
-// Render the React client
-app.use("*", async (req, res, next) => {
-  const url = req.originalUrl;
-
-  try {
-    const template = await vite.transformIndexHtml(
-      url,
-      fs.readFileSync("index.html", "utf-8"),
-    );
-    
-    res.status(200).set({ "Content-Type": "text/html" }).end(template);
-  } catch (e) {
-    vite.ssrFixStacktrace(e);
-    next(e);
-  }
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    error: 'Not found',
+    message: `Route ${req.originalUrl} not found` 
+  });
 });
 
 // Start server
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-  console.log(`Open http://localhost:${port} in your browser`);
-  console.log(`Make sure OPENAI_API_KEY is set in your .env file`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`LangPal server running on port ${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'production'}`);
+  console.log(`Health check: http://localhost:${port}/health`);
+  console.log(`Make sure OPENAI_API_KEY is set in environment variables`);
 });
