@@ -8,6 +8,7 @@ interface StatePopupProps {
 
 const StatePopup: React.FC<StatePopupProps> = ({ state }) => {
   const [visible, setVisible] = useState(false);
+  const isMobile = window.innerWidth < 768;
   
   useEffect(() => {
     // Show popup when state changes to listening or thinking
@@ -26,33 +27,40 @@ const StatePopup: React.FC<StatePopupProps> = ({ state }) => {
   
   const isListening = state === 'listening';
   
+  const isMobile = window.innerWidth < 768;
+  
   return (
     <div className="z-50">
       <div className={`${
         isListening ? 'bg-green-100 border-green-500' : 'bg-blue-100 border-blue-500'
-      } border-l-4 rounded-lg shadow-lg py-1.5 px-2 flex items-center animate-pulse`}
-      style={{ maxWidth: '200px', fontSize: '12px' }}>
+      } border-l-4 rounded-lg shadow-lg py-2 px-3 md:px-4 flex items-center animate-pulse max-w-xs md:max-w-none`}>
         <div className={`${
           isListening ? 'bg-green-500' : 'bg-blue-500'
-        } rounded-full p-1 mr-1.5 flex-shrink-0`}>
+        } rounded-full p-1.5 mr-2 flex-shrink-0`}>
           {isListening ? (
-            <Mic className="text-white" size={10} />
+            <Mic className="text-white" size={isMobile ? 12 : 16} />
           ) : (
-            <RefreshCw className="text-white animate-spin" size={10} />
+            <RefreshCw className="text-white animate-spin" size={isMobile ? 12 : 16} />
           )}
         </div>
-        <div className="min-w-0 overflow-hidden">
+        <div className="min-w-0">
           <p className={`${
             isListening ? 'text-green-800' : 'text-blue-800'
-          } font-semibold text-xs leading-tight`}>
+          } font-semibold ${isMobile ? 'text-xs' : 'text-sm'}`}>
             {isListening ? 'Listening...' : 'Processing...'}
           </p>
           <p className={`${
             isListening ? 'text-green-600' : 'text-blue-600'
-          } text-xs leading-tight truncate`}>
-            {isListening 
-              ? 'Thinking💡' 
-              : 'Creating magic🪄'}
+          } ${isMobile ? 'text-xs' : 'text-xs'} leading-tight`}>
+            {isMobile ? (
+              // Mobile: Short messages
+              isListening ? 'Thinking💡' : 'Creating magic🪄'
+            ) : (
+              // Desktop: Full messages
+              isListening 
+                ? 'Langpals is thinking of the best way to answer to your child💡' 
+                : 'Langpals is generating a magical response for your child 🪄'
+            )}
           </p>
         </div>
       </div>
