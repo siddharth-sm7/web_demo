@@ -142,90 +142,105 @@ function App() {
   };
 
   return (
-    <div className="w-full bg-gray-50" style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden' }}>
-      {/* Server status indicator - Minimal height */}
-      {serverStatus !== 'online' && (
-        <div className={`${
-          serverStatus === 'checking' 
-            ? 'bg-blue-100 border-blue-500 text-blue-700' 
-            : 'bg-yellow-100 border-yellow-500 text-yellow-700'
-        } border-l-4 p-2 text-xs flex items-center`}
-        style={{ minHeight: '40px', maxHeight: '40px' }}>
-          <div className="flex items-center">
-            {serverStatus === 'checking' ? (
-              <svg className="animate-spin h-3 w-3 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Server status indicator */}
+      {serverStatus === 'checking' && (
+        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-2 md:p-4">
+          <div className="flex">
+            <div className="py-1">
+              <svg className="animate-spin h-4 w-4 md:h-6 md:w-6 text-blue-500 mr-2 md:mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-            ) : (
-              <svg className="h-3 w-3 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            )}
-            <span className="font-bold">
-              {serverStatus === 'checking' ? 'Connecting...' : 'Demo Mode'}
-            </span>
+            </div>
+            <div>
+              <p className="font-bold text-sm md:text-base">Connecting to Server</p>
+              <p className="text-xs md:text-sm">Checking backend server status...</p>
+            </div>
           </div>
         </div>
       )}
       
-      {/* Main content area with calculated height */}
-      <div 
-        className="w-full flex flex-col md:flex-row"
-        style={{ 
-          height: serverStatus === 'online' ? '100vh' : 'calc(100vh - 40px)',
-          maxHeight: serverStatus === 'online' ? '100vh' : 'calc(100vh - 40px)',
-          overflow: 'hidden'
-        }}
-      >
-        {/* Teddy bear section - Fixed small height on mobile */}
-        <div 
-          className="w-full md:w-1/2 bg-white flex items-center justify-center relative border-b md:border-b-0 md:border-r border-gray-200"
-          style={{ 
-            height: window.innerWidth < 768 ? '25vh' : '100%',
-            minHeight: window.innerWidth < 768 ? '160px' : 'auto',
-            maxHeight: window.innerWidth < 768 ? '200px' : '100%'
-          }}
-        >
+      {serverStatus === 'offline' && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 md:p-4">
+          <div className="flex">
+            <div className="py-1">
+              <svg className="h-4 w-4 md:h-6 md:w-6 text-yellow-500 mr-2 md:mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-bold text-sm md:text-base">Demo Mode Active</p>
+              <p className="text-xs md:text-sm">Backend server is not available. Running in demo mode with simulated responses.</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {serverStatus === 'online' && (
+        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-2 md:p-4">
+          <div className="flex">
+            <div className="py-1">
+              <svg className="h-4 w-4 md:h-6 md:w-6 text-green-500 mr-2 md:mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-bold text-sm md:text-base">Server Connected</p>
+              <p className="text-xs md:text-sm">Backend server is online and ready for voice interaction.</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Main content - Responsive: Mobile stacked, Desktop side-by-side */}
+      <div className="flex flex-1 overflow-hidden relative flex-col md:flex-row">
+        {/* Left panel - Teddy bear section */}
+        <div className="w-full md:w-1/2 bg-white p-4 md:p-8 relative flex items-center justify-center"
+             style={{ 
+               // Mobile: Fixed small height
+               height: window.innerWidth < 768 ? '25vh' : 'auto',
+               minHeight: window.innerWidth < 768 ? '160px' : 'auto',
+               maxHeight: window.innerWidth < 768 ? '200px' : 'none'
+             }}>
           <img 
             ref={imageRef}
             src="/images/teddy.png" 
             alt="LangPal Teddy"
-            className="object-contain"
-            style={{ 
-              width: window.innerWidth < 768 ? '120px' : '300px',
-              height: window.innerWidth < 768 ? '120px' : '300px',
-              maxWidth: '90%',
-              maxHeight: '90%'
+            className="max-w-full max-h-full object-contain"
+            style={{
+              // Responsive sizing
+              width: window.innerWidth < 768 ? '120px' : 'auto',
+              height: window.innerWidth < 768 ? '120px' : 'auto'
             }}
             onError={(e) => {
+              // Fallback to a placeholder if image doesn't exist
               e.currentTarget.style.display = 'none';
               const placeholder = document.createElement('div');
-              placeholder.className = 'bg-amber-200 rounded-3xl flex items-center justify-center';
-              placeholder.style.width = window.innerWidth < 768 ? '80px' : '200px';
-              placeholder.style.height = window.innerWidth < 768 ? '80px' : '200px';
-              placeholder.innerHTML = `<div style="font-size: ${window.innerWidth < 768 ? '2rem' : '4rem'}">🧸</div>`;
+              placeholder.className = window.innerWidth < 768 
+                ? 'w-20 h-20 bg-amber-200 rounded-3xl flex items-center justify-center'
+                : 'w-64 h-64 bg-amber-200 rounded-3xl flex items-center justify-center';
+              placeholder.innerHTML = window.innerWidth < 768 
+                ? '<div class="text-2xl">🧸</div>'
+                : '<div class="text-6xl">🧸</div>';
               e.currentTarget.parentElement!.appendChild(placeholder);
             }}
           />
           
-          {/* State popup */}
+          {/* State popup positioned responsively */}
           {isConnected && (
-            <div className="absolute top-1 right-1 md:top-4 md:right-4">
+            <div className="absolute top-2 right-2 md:top-32 md:right-16">
               <StatePopup state={robotState} />
             </div>
           )}
         </div>
         
-        {/* Chat interface - Takes remaining height */}
-        <div 
-          className="w-full md:w-1/2 bg-white"
-          style={{ 
-            height: window.innerWidth < 768 ? '75vh' : '100%',
-            maxHeight: window.innerWidth < 768 ? '75vh' : '100%',
-            overflow: 'hidden'
-          }}
-        >
+        {/* Right panel - Chat interface */}
+        <div className="w-full md:w-1/2 flex flex-col"
+             style={{
+               // Mobile: Remaining viewport height, Desktop: Full height
+               height: window.innerWidth < 768 ? '75vh' : '100%'
+             }}>
           <ChatInterface
             messages={messages}
             isSoundEnabled={isSoundEnabled}
@@ -243,9 +258,9 @@ function App() {
       
       {/* Error notification */}
       {webrtcState.error && !demoMode && (
-        <div className="fixed bottom-2 left-2 right-2 bg-red-500 text-white px-3 py-2 rounded-lg shadow-lg text-center z-50">
-          <p className="font-medium text-xs">Connection Error</p>
-          <p className="text-xs">{webrtcState.error}</p>
+        <div className="fixed bottom-4 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg md:max-w-md text-center">
+          <p className="font-medium">Connection Error</p>
+          <p className="text-sm">{webrtcState.error}</p>
         </div>
       )}
     </div>
