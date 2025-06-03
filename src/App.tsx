@@ -142,102 +142,109 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
-      {/* Server status indicator - Compact for mobile */}
-      {serverStatus === 'checking' && (
-        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-2 flex-shrink-0">
+    <div className="w-full bg-gray-50" style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden' }}>
+      {/* Server status indicator - Minimal height */}
+      {serverStatus !== 'online' && (
+        <div className={`${
+          serverStatus === 'checking' 
+            ? 'bg-blue-100 border-blue-500 text-blue-700' 
+            : 'bg-yellow-100 border-yellow-500 text-yellow-700'
+        } border-l-4 p-2 text-xs flex items-center`}
+        style={{ minHeight: '40px', maxHeight: '40px' }}>
           <div className="flex items-center">
-            <svg className="animate-spin h-4 w-4 text-blue-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <div>
-              <p className="font-bold text-sm">Connecting...</p>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {serverStatus === 'offline' && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 flex-shrink-0">
-          <div className="flex items-center">
-            <svg className="h-4 w-4 text-yellow-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div>
-              <p className="font-bold text-sm">Demo Mode</p>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {serverStatus === 'online' && (
-        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-2 flex-shrink-0">
-          <div className="flex items-center">
-            <svg className="h-4 w-4 text-green-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-            </svg>
-            <div>
-              <p className="font-bold text-sm">Server Connected</p>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Main content - Responsive layout with proper height management */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Mobile: Stack vertically, Desktop: Side by side */}
-        <div className="flex flex-col md:flex-row w-full h-full">
-          
-          {/* Teddy bear panel - Mobile: Flexible height, Desktop: 50% width */}
-          <div className="w-full md:w-1/2 flex items-center justify-center bg-white p-4 relative flex-shrink-0" 
-               style={{ height: 'clamp(200px, 30vh, 300px)' }}>
-            <img 
-              ref={imageRef}
-              src="/images/teddy.png" 
-              alt="LangPal Teddy"
-              className="max-w-full max-h-full object-contain"
-              style={{ maxHeight: '180px', maxWidth: '180px' }}
-              onError={(e) => {
-                // Fallback to a placeholder if image doesn't exist
-                e.currentTarget.style.display = 'none';
-                const placeholder = document.createElement('div');
-                placeholder.className = 'w-20 h-20 md:w-32 md:h-32 bg-amber-200 rounded-3xl flex items-center justify-center';
-                placeholder.innerHTML = '<div class="text-2xl md:text-4xl">🧸</div>';
-                e.currentTarget.parentElement!.appendChild(placeholder);
-              }}
-            />
-            
-            {/* State popup - Responsive positioning */}
-            {isConnected && (
-              <div className="absolute top-2 right-2 md:top-8 md:right-8">
-                <StatePopup state={robotState} />
-              </div>
+            {serverStatus === 'checking' ? (
+              <svg className="animate-spin h-3 w-3 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              <svg className="h-3 w-3 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
             )}
+            <span className="font-bold">
+              {serverStatus === 'checking' ? 'Connecting...' : 'Demo Mode'}
+            </span>
           </div>
+        </div>
+      )}
+      
+      {/* Main content area with calculated height */}
+      <div 
+        className="w-full flex flex-col md:flex-row"
+        style={{ 
+          height: serverStatus === 'online' ? '100vh' : 'calc(100vh - 40px)',
+          maxHeight: serverStatus === 'online' ? '100vh' : 'calc(100vh - 40px)',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Teddy bear section - Fixed small height on mobile */}
+        <div 
+          className="w-full md:w-1/2 bg-white flex items-center justify-center relative border-b md:border-b-0 md:border-r border-gray-200"
+          style={{ 
+            height: window.innerWidth < 768 ? '25vh' : '100%',
+            minHeight: window.innerWidth < 768 ? '160px' : 'auto',
+            maxHeight: window.innerWidth < 768 ? '200px' : '100%'
+          }}
+        >
+          <img 
+            ref={imageRef}
+            src="/images/teddy.png" 
+            alt="LangPal Teddy"
+            className="object-contain"
+            style={{ 
+              width: window.innerWidth < 768 ? '120px' : '300px',
+              height: window.innerWidth < 768 ? '120px' : '300px',
+              maxWidth: '90%',
+              maxHeight: '90%'
+            }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              const placeholder = document.createElement('div');
+              placeholder.className = 'bg-amber-200 rounded-3xl flex items-center justify-center';
+              placeholder.style.width = window.innerWidth < 768 ? '80px' : '200px';
+              placeholder.style.height = window.innerWidth < 768 ? '80px' : '200px';
+              placeholder.innerHTML = `<div style="font-size: ${window.innerWidth < 768 ? '2rem' : '4rem'}">🧸</div>`;
+              e.currentTarget.parentElement!.appendChild(placeholder);
+            }}
+          />
           
-          {/* Chat interface panel - Takes remaining space */}
-          <div className="w-full md:w-1/2 flex flex-col min-h-0 flex-1">
-            <ChatInterface
-              messages={messages}
-              isSoundEnabled={isSoundEnabled}
-              onToggleSound={toggleSound}
-              isConnected={isConnected}
-              isProcessing={webrtcState.isProcessing}
-              onStartConversation={handleStartConversation}
-              onEndConversation={handleEndConversation}
-              onMessageSubmit={handleMessageSubmit}
-              demoMode={demoMode}
-              robotState={robotState}
-            />
-          </div>
+          {/* State popup */}
+          {isConnected && (
+            <div className="absolute top-1 right-1 md:top-4 md:right-4">
+              <StatePopup state={robotState} />
+            </div>
+          )}
+        </div>
+        
+        {/* Chat interface - Takes remaining height */}
+        <div 
+          className="w-full md:w-1/2 bg-white"
+          style={{ 
+            height: window.innerWidth < 768 ? '75vh' : '100%',
+            maxHeight: window.innerWidth < 768 ? '75vh' : '100%',
+            overflow: 'hidden'
+          }}
+        >
+          <ChatInterface
+            messages={messages}
+            isSoundEnabled={isSoundEnabled}
+            onToggleSound={toggleSound}
+            isConnected={isConnected}
+            isProcessing={webrtcState.isProcessing}
+            onStartConversation={handleStartConversation}
+            onEndConversation={handleEndConversation}
+            onMessageSubmit={handleMessageSubmit}
+            demoMode={demoMode}
+            robotState={robotState}
+          />
         </div>
       </div>
       
-      {/* Error notification - Mobile optimized */}
+      {/* Error notification */}
       {webrtcState.error && !demoMode && (
-        <div className="fixed bottom-4 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 bg-red-500 text-white px-3 py-2 rounded-lg shadow-lg md:max-w-md text-center z-50">
-          <p className="font-medium text-sm">Connection Error</p>
+        <div className="fixed bottom-2 left-2 right-2 bg-red-500 text-white px-3 py-2 rounded-lg shadow-lg text-center z-50">
+          <p className="font-medium text-xs">Connection Error</p>
           <p className="text-xs">{webrtcState.error}</p>
         </div>
       )}
