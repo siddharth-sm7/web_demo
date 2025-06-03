@@ -145,83 +145,83 @@ function App() {
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Server status indicator */}
       {serverStatus === 'checking' && (
-        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4">
+        <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-2 md:p-4">
           <div className="flex">
             <div className="py-1">
-              <svg className="animate-spin h-6 w-6 text-blue-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin h-4 w-4 md:h-6 md:w-6 text-blue-500 mr-2 md:mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
             </div>
             <div>
-              <p className="font-bold">Connecting to Server</p>
-              <p className="text-sm">Checking backend server status...</p>
+              <p className="font-bold text-sm md:text-base">Connecting to Server</p>
+              <p className="text-xs md:text-sm">Checking backend server status...</p>
             </div>
           </div>
         </div>
       )}
       
       {serverStatus === 'offline' && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4">
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 md:p-4">
           <div className="flex">
             <div className="py-1">
-              <svg className="h-6 w-6 text-yellow-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 md:h-6 md:w-6 text-yellow-500 mr-2 md:mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
             <div>
-              <p className="font-bold">Demo Mode Active</p>
-              <p className="text-sm">Backend server is not available. Running in demo mode with simulated responses.</p>
+              <p className="font-bold text-sm md:text-base">Demo Mode Active</p>
+              <p className="text-xs md:text-sm">Backend server is not available. Running in demo mode with simulated responses.</p>
             </div>
           </div>
         </div>
       )}
       
       {serverStatus === 'online' && (
-        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4">
+        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-2 md:p-4">
           <div className="flex">
             <div className="py-1">
-              <svg className="h-6 w-6 text-green-500 mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 md:h-6 md:w-6 text-green-500 mr-2 md:mr-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <div>
-              <p className="font-bold">Server Connected</p>
-              <p className="text-sm">Backend server is online and ready for voice interaction.</p>
+              <p className="font-bold text-sm md:text-base">Server Connected</p>
+              <p className="text-xs md:text-sm">Backend server is online and ready for voice interaction.</p>
             </div>
           </div>
         </div>
       )}
       
-      {/* Main content */}
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Left panel - Image */}
-        <div className="w-full md:w-1/2 h-full flex items-center justify-center bg-white p-8 relative">
+      {/* Main content - Mobile: Stack vertically, Desktop: Side by side */}
+      <div className="flex flex-1 overflow-hidden relative flex-col md:flex-row">
+        {/* Teddy bear panel - Mobile: Small height, Desktop: Full width */}
+        <div className="w-full md:w-1/2 h-48 md:h-full flex items-center justify-center bg-white p-4 md:p-8 relative">
           <img 
             ref={imageRef}
             src="/images/teddy.png" 
             alt="LangPal Teddy"
-            className="max-w-full max-h-full object-contain"
+            className="max-w-full max-h-full object-contain w-32 h-32 md:w-auto md:h-auto"
             onError={(e) => {
               // Fallback to a placeholder if image doesn't exist
               e.currentTarget.style.display = 'none';
               const placeholder = document.createElement('div');
-              placeholder.className = 'w-64 h-64 bg-amber-200 rounded-3xl flex items-center justify-center';
-              placeholder.innerHTML = '<div class="text-6xl">🧸</div>';
+              placeholder.className = 'w-24 h-24 md:w-64 md:h-64 bg-amber-200 rounded-3xl flex items-center justify-center';
+              placeholder.innerHTML = '<div class="text-3xl md:text-6xl">🧸</div>';
               e.currentTarget.parentElement!.appendChild(placeholder);
             }}
           />
           
-          {/* State popup positioned near teddy bear's right ear */}
+          {/* State popup - Responsive positioning */}
           {isConnected && (
-            <div className="absolute top-32 right-16 md:top-24 md:right-20">
+            <div className="absolute top-2 right-2 md:top-24 md:right-20">
               <StatePopup state={robotState} />
             </div>
           )}
         </div>
         
-        {/* Right panel - Chat interface */}
-        <div className="w-full md:w-1/2 h-full">
+        {/* Chat interface panel - Mobile: Most of screen, Desktop: Half */}
+        <div className="w-full md:w-1/2 flex-1 md:h-full">
           <ChatInterface
             messages={messages}
             isSoundEnabled={isSoundEnabled}
@@ -237,11 +237,11 @@ function App() {
         </div>
       </div>
       
-      {/* Error notification */}
+      {/* Error notification - Responsive */}
       {webrtcState.error && !demoMode && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg max-w-md text-center">
-          <p className="font-medium">Connection Error</p>
-          <p className="text-sm">{webrtcState.error}</p>
+        <div className="fixed bottom-4 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg md:max-w-md text-center">
+          <p className="font-medium text-sm md:text-base">Connection Error</p>
+          <p className="text-xs md:text-sm">{webrtcState.error}</p>
         </div>
       )}
     </div>
