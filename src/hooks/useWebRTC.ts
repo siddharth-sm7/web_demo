@@ -28,21 +28,53 @@ export const useWebRTC = (
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   
-  // Accumulate text deltas to avoid fragmented messages
+  // Message accumulation state
   const accumulatedTextRef = useRef<string>('');
-  const accumulationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const safetyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isResponseActiveRef = useRef<boolean>(false);
+  const lastDeltaTimeRef = useRef<number>(0);
   
-  // Function to handle accumulated text
-  const flushAccumulatedText = useCallback(() => {
+  // Function to flush accumulated text
+  const flushAccumulatedText = useCallback((reason: string) => {
     if (accumulatedTextRef.current.trim()) {
+      console.log(`Flushing accumulated text (${reason}):`, accumulatedTextRef.current.trim());
       onMessage(accumulatedTextRef.current.trim(), 'langpal');
       accumulatedTextRef.current = '';
     }
-    if (accumulationTimeoutRef.current) {
-      clearTimeout(accumulationTimeoutRef.current);
-      accumulationTimeoutRef.current = null;
+    
+    // Clear safety timeout
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current);
+      safetyTimeoutRef.current = null;
     }
+    
+    isResponseActiveRef.current = false;
   }, [onMessage]);
+  
+  // Function to handle text deltas
+  const handleTextDelta = useCallback((delta: string) => {
+    if (!isResponseActiveRef.current) return;
+    
+    // Add delta to accumulated text
+    accumulatedTextRef.current += delta;
+    lastDeltaTimeRef.current = Date.now();
+    
+    // Clear existing safety timeout
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current);
+    }
+    
+    // Set a safety timeout (shorter than before) - only as a fallback
+    safetyTimeoutRef.current = setTimeout(() => {
+      const timeSinceLastDelta = Date.now() - lastDeltaTimeRef.current;
+      
+      // Only flush if we haven't received deltas for a while and response seems stalled
+      if (timeSinceLastDelta >= 800 && isResponseActiveRef.current) {
+        console.log('Safety timeout triggered - response may have stalled');
+        flushAccumulatedText('safety_timeout');
+      }
+    }, 1000); // 1 second safety timeout
+  }, [flushAccumulatedText]);
   
   // Setup connection following the official OpenAI pattern
   const setupConnection = useCallback(async () => {
@@ -161,7 +193,7 @@ export const useWebRTC = (
       dc.addEventListener("message", (e) => {
         try {
           const event = JSON.parse(e.data);
-          console.log("Received event:", event.type, event);
+          console.log("Received event:", event.type);
           
           // Handle different event types
           switch (event.type) {
@@ -179,58 +211,57 @@ export const useWebRTC = (
               }
               break;
               
+            case "response.created":
+              console.log("Response started - initializing accumulation");
+              // Initialize response state
+              accumulatedTextRef.current = '';
+              isResponseActiveRef.current = true;
+              lastDeltaTimeRef.current = Date.now();
+              
+              // Clear any existing safety timeout
+              if (safetyTimeoutRef.current) {
+                clearTimeout(safetyTimeoutRef.current);
+                safetyTimeoutRef.current = null;
+              }
+              break;
+              
             case "response.audio_transcript.delta":
               if (event.delta) {
-                // Accumulate text deltas instead of sending immediately
-                accumulatedTextRef.current += event.delta;
-                
-                // Clear existing timeout and set a new one
-                if (accumulationTimeoutRef.current) {
-                  clearTimeout(accumulationTimeoutRef.current);
-                }
-                
-                // Flush accumulated text after 500ms of silence
-                accumulationTimeoutRef.current = setTimeout(() => {
-                  flushAccumulatedText();
-                }, 500);
+                console.log("Audio transcript delta:", event.delta);
+                handleTextDelta(event.delta);
               }
               break;
               
             case "response.text.delta":
               if (event.delta) {
-                // Accumulate text deltas instead of sending immediately
-                accumulatedTextRef.current += event.delta;
-                
-                // Clear existing timeout and set a new one
-                if (accumulationTimeoutRef.current) {
-                  clearTimeout(accumulationTimeoutRef.current);
-                }
-                
-                // Flush accumulated text after 500ms of silence
-                accumulationTimeoutRef.current = setTimeout(() => {
-                  flushAccumulatedText();
-                }, 500);
+                console.log("Text delta:", event.delta);
+                handleTextDelta(event.delta);
               }
               break;
               
             case "response.done":
-              console.log("Response completed");
-              // Flush any remaining accumulated text
-              flushAccumulatedText();
+              console.log("Response completed - flushing immediately");
+              // Primary completion trigger - flush immediately
+              flushAccumulatedText('response_done');
               break;
               
-            case "response.created":
-              // Clear accumulated text when starting new response
-              accumulatedTextRef.current = '';
-              if (accumulationTimeoutRef.current) {
-                clearTimeout(accumulationTimeoutRef.current);
-                accumulationTimeoutRef.current = null;
-              }
+            case "response.output_item.done":
+              console.log("Output item completed - flushing immediately");
+              // Secondary completion trigger - flush immediately
+              flushAccumulatedText('output_item_done');
+              break;
+              
+            case "response.content_part.done":
+              console.log("Content part completed - flushing immediately");
+              // Another completion trigger
+              flushAccumulatedText('content_part_done');
               break;
               
             case "error":
               console.error("OpenAI API error:", event.error);
               setState(prev => ({ ...prev, error: event.error.message || 'API error occurred' }));
+              // Flush any pending text on error
+              flushAccumulatedText('error');
               break;
           }
         } catch (error) {
@@ -287,14 +318,14 @@ export const useWebRTC = (
         isProcessing: false 
       }));
     }
-  }, [onMessage, systemPrompt, flushAccumulatedText]);
+  }, [onMessage, systemPrompt, handleTextDelta, flushAccumulatedText]);
   
   // Send event to OpenAI
   const sendEvent = useCallback((event: any) => {
     if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
       event.event_id = event.event_id || crypto.randomUUID();
       dataChannelRef.current.send(JSON.stringify(event));
-      console.log("Sent event:", event.type, event);
+      console.log("Sent event:", event.type);
       return true;
     }
     return false;
@@ -324,11 +355,13 @@ export const useWebRTC = (
   // Cleanup function
   const cleanup = useCallback(() => {
     // Clear any pending text accumulation
-    if (accumulationTimeoutRef.current) {
-      clearTimeout(accumulationTimeoutRef.current);
-      accumulationTimeoutRef.current = null;
+    if (safetyTimeoutRef.current) {
+      clearTimeout(safetyTimeoutRef.current);
+      safetyTimeoutRef.current = null;
     }
     accumulatedTextRef.current = '';
+    isResponseActiveRef.current = false;
+    lastDeltaTimeRef.current = 0;
     
     if (dataChannelRef.current) {
       dataChannelRef.current.close();

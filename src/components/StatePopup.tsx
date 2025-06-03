@@ -50,8 +50,8 @@ const StatePopup: React.FC<StatePopupProps> = ({ state }) => {
             isListening ? 'text-green-600' : 'text-blue-600'
           } text-xs`}>
             {isListening 
-              ? 'LangPal is listening to you' 
-              : 'LangPal is generating a response'}
+              ? 'Langpals is thinking of the best way to answer to your child💡' 
+              : 'Langpals is generating a magical response for your child 🪄'}
           </p>
         </div>
       </div>
