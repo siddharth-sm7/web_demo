@@ -30,33 +30,26 @@ const StatePopup: React.FC<StatePopupProps> = ({ state }) => {
     <div className="z-50">
       <div className={`${
         isListening ? 'bg-green-100 border-green-500' : 'bg-blue-100 border-blue-500'
-      } border-l-4 rounded-lg shadow-lg py-1.5 md:py-2 px-2 md:px-4 flex items-center animate-pulse max-w-xs md:max-w-none`}>
+      } border-l-4 rounded-lg shadow-lg py-1.5 px-2 flex items-center animate-pulse`}
+      style={{ maxWidth: '200px', fontSize: '12px' }}>
         <div className={`${
           isListening ? 'bg-green-500' : 'bg-blue-500'
-        } rounded-full p-1 md:p-1.5 mr-1.5 md:mr-2 flex-shrink-0`}>
+        } rounded-full p-1 mr-1.5 flex-shrink-0`}>
           {isListening ? (
-            <Mic className="text-white" size={12} />
+            <Mic className="text-white" size={10} />
           ) : (
-            <RefreshCw className="text-white animate-spin" size={12} />
+            <RefreshCw className="text-white animate-spin" size={10} />
           )}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 overflow-hidden">
           <p className={`${
             isListening ? 'text-green-800' : 'text-blue-800'
-          } font-semibold text-xs md:text-sm`}>
+          } font-semibold text-xs leading-tight`}>
             {isListening ? 'Listening...' : 'Processing...'}
           </p>
           <p className={`${
             isListening ? 'text-green-600' : 'text-blue-600'
-          } text-xs leading-tight hidden md:block`}>
-            {isListening 
-              ? 'Langpals is thinking of the best way to answer to your child💡' 
-              : 'Langpals is generating a magical response for your child 🪄'}
-          </p>
-          {/* Shorter mobile text */}
-          <p className={`${
-            isListening ? 'text-green-600' : 'text-blue-600'
-          } text-xs leading-tight md:hidden`}>
+          } text-xs leading-tight truncate`}>
             {isListening 
               ? 'Thinking💡' 
               : 'Creating magic🪄'}
