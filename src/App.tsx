@@ -27,7 +27,25 @@ const getBackendUrl = () => {
 function App() {
   const [demoMode, setDemoMode] = useState(false);
   const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [isMobile, setIsMobile] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
+  
+  // Handle mobile detection safely
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Set initial value
+    checkIsMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
   
   const {
     messages,
@@ -199,9 +217,9 @@ function App() {
         <div className="w-full md:w-1/2 bg-white p-4 md:p-8 relative flex items-center justify-center"
              style={{ 
                // Mobile: Fixed small height
-               height: window.innerWidth < 768 ? '25vh' : 'auto',
-               minHeight: window.innerWidth < 768 ? '160px' : 'auto',
-               maxHeight: window.innerWidth < 768 ? '200px' : 'none'
+               height: isMobile ? '25vh' : 'auto',
+               minHeight: isMobile ? '160px' : 'auto',
+               maxHeight: isMobile ? '200px' : 'none'
              }}>
           <img 
             ref={imageRef}
@@ -210,17 +228,17 @@ function App() {
             className="max-w-full max-h-full object-contain"
             style={{
               // Responsive sizing
-              width: window.innerWidth < 768 ? '120px' : 'auto',
-              height: window.innerWidth < 768 ? '120px' : 'auto'
+              width: isMobile ? '120px' : 'auto',
+              height: isMobile ? '120px' : 'auto'
             }}
             onError={(e) => {
               // Fallback to a placeholder if image doesn't exist
               e.currentTarget.style.display = 'none';
               const placeholder = document.createElement('div');
-              placeholder.className = window.innerWidth < 768 
+              placeholder.className = isMobile 
                 ? 'w-20 h-20 bg-amber-200 rounded-3xl flex items-center justify-center'
                 : 'w-64 h-64 bg-amber-200 rounded-3xl flex items-center justify-center';
-              placeholder.innerHTML = window.innerWidth < 768 
+              placeholder.innerHTML = isMobile 
                 ? '<div class="text-2xl">🧸</div>'
                 : '<div class="text-6xl">🧸</div>';
               e.currentTarget.parentElement!.appendChild(placeholder);
@@ -239,7 +257,7 @@ function App() {
         <div className="w-full md:w-1/2 flex flex-col"
              style={{
                // Mobile: Remaining viewport height, Desktop: Full height
-               height: window.innerWidth < 768 ? '75vh' : '100%'
+               height: isMobile ? '75vh' : '100%'
              }}>
           <ChatInterface
             messages={messages}

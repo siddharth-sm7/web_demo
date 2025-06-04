@@ -8,7 +8,24 @@ interface StatePopupProps {
 
 const StatePopup: React.FC<StatePopupProps> = ({ state }) => {
   const [visible, setVisible] = useState(false);
-  const isMobile = window.innerWidth < 768;
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Handle mobile detection safely
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Set initial value
+    checkIsMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
   
   useEffect(() => {
     // Show popup when state changes to listening or thinking
@@ -26,8 +43,6 @@ const StatePopup: React.FC<StatePopupProps> = ({ state }) => {
   if (!visible) return null;
   
   const isListening = state === 'listening';
-  
-  const isMobile = window.innerWidth < 768;
   
   return (
     <div className="z-50">

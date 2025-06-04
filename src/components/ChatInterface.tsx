@@ -29,8 +29,25 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 }) => {
   const [inputText, setInputText] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isMobile = window.innerWidth < 768;
+  
+  // Handle window resize and initial mobile detection
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Set initial value
+    checkIsMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
   
   // Scroll to bottom when messages change
   useEffect(() => {
