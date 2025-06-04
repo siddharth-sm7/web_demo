@@ -53,7 +53,7 @@ const StatePopup: React.FC<StatePopupProps> = ({ state }) => {
             isListening ? 'text-green-600' : 'text-blue-600'
           } ${isMobile ? 'text-xs' : 'text-xs'} leading-tight`}>
             {isMobile ? (
-              // Mobile: Short messages
+              // Mobile: Short messages (changable)
               isListening ? 'Thinking💡' : 'Creating magic🪄'
             ) : (
               // Desktop: Full messages
