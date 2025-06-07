@@ -169,52 +169,50 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         </div>
         
-        {/* Messages area - Only scrollable when content exceeds height */}
+        {/* Messages area - Only scrollable when there are messages */}
         <div 
-          className="px-3 py-2 flex flex-col"
+          className={`px-3 py-2 ${messages.length === 0 ? 'flex items-center justify-center' : 'overflow-y-auto'}`}
           style={{ height: availableHeight, maxHeight: availableHeight }}
         >
           {messages.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-center text-gray-500 text-sm">
+            <div className="text-center text-gray-500 text-sm">
               {demoMode ? "Type a message below!" : "Start talking to LangPal!"}
             </div>
           ) : (
-            <div className="overflow-y-auto flex-1">
-              <div className="space-y-2 pb-4">
-                {messages.map((message) => (
+            <div className="space-y-2 pb-4">
+              {messages.map((message) => (
+                <div 
+                  key={message.id}
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
                   <div 
-                    key={message.id}
-                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`max-w-[80%] rounded-lg px-2 py-1 ${
+                      message.sender === 'user' 
+                        ? 'bg-blue-100 text-blue-900' 
+                        : 'bg-red-100 text-red-900'
+                    }`}
                   >
-                    <div 
-                      className={`max-w-[80%] rounded-lg px-2 py-1 ${
-                        message.sender === 'user' 
-                          ? 'bg-blue-100 text-blue-900' 
-                          : 'bg-red-100 text-red-900'
-                      }`}
-                    >
-                      <p className="text-xs leading-relaxed">{message.text}</p>
-                      <p className="text-xs opacity-60 mt-1">
-                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                    <p className="text-xs leading-relaxed">{message.text}</p>
+                    <p className="text-xs opacity-60 mt-1">
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              
+              {isProcessing && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-lg px-2 py-1">
+                    <div className="flex space-x-1">
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                     </div>
                   </div>
-                ))}
-                
-                {isProcessing && (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-100 rounded-lg px-2 py-1">
-                      <div className="flex space-x-1">
-                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
