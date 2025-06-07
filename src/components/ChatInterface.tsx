@@ -72,36 +72,44 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Initial welcome state when not connected
   if (!isConnected) {
     return (
-      <div className="flex flex-col h-full w-full bg-white p-4 md:p-6">
-        <div className="flex justify-between items-center mb-4 md:mb-6">
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-800">I'm LangPal!</h1>
-          <button 
-            onClick={onToggleSound}
-            className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-            aria-label={isSoundEnabled ? "Mute sound" : "Enable sound"}
-          >
-            {isMobile ? 
-              (isSoundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />) :
-              (isSoundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />)
-            }
-          </button>
+      <div className="flex flex-col h-full w-full bg-white relative">
+        {/* Main content area */}
+        <div className={`flex flex-col p-4 md:p-6 ${isMobile ? 'pb-20' : ''}`}>
+          <div className="flex justify-between items-center mb-4 md:mb-6">
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-800">I'm LangPal!</h1>
+            <button 
+              onClick={onToggleSound}
+              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              aria-label={isSoundEnabled ? "Mute sound" : "Enable sound"}
+            >
+              {isMobile ? 
+                (isSoundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />) :
+                (isSoundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />)
+              }
+            </button>
+          </div>
+          
+          <p className="text-base md:text-lg text-gray-600 mb-6 md:mb-8">
+            Hello! I'm LangPal, your friend. I'm always bubbling with enthusiasm to learn, play, and join you on imaginative adventures. Let's embark on some fun together!
+          </p>
+          
+          {demoMode && (
+            <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-3 md:p-4 mb-6 md:mb-8">
+              <p className="font-bold text-sm md:text-base">Demo Mode Active</p>
+              <p className="text-xs md:text-sm">
+                This is a demonstration of LangPal. You can type messages to simulate 
+                a conversation with the teddy bear.
+              </p>
+            </div>
+          )}
         </div>
         
-        <p className="text-base md:text-lg text-gray-600 mb-6 md:mb-8">
-          Hello! I'm LangPal, your friend. I'm always bubbling with enthusiasm to learn, play, and join you on imaginative adventures. Let's embark on some fun together!
-        </p>
-        
-        {demoMode && (
-          <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-3 md:p-4 mb-6 md:mb-8">
-            <p className="font-bold text-sm md:text-base">Demo Mode Active</p>
-            <p className="text-xs md:text-sm">
-              This is a demonstration of LangPal. You can type messages to simulate 
-              a conversation with the teddy bear.
-            </p>
-          </div>
-        )}
-        
-        <div className="mt-auto">
+        {/* Sticky button for mobile, normal positioning for desktop */}
+        <div className={`${
+          isMobile 
+            ? 'fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg' 
+            : 'mt-auto p-4 md:p-6'
+        }`}>
           <button
             onClick={onStartConversation}
             disabled={isProcessing}
@@ -122,16 +130,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     );
   }
   
-  // Mobile: Use strict height management, Desktop: Use original flex layout
+  // Mobile: Use strict height management with sticky button, Desktop: Use original flex layout
   if (isMobile) {
-    // Mobile layout with strict height control
+    // Mobile layout with strict height control and sticky button
     const headerHeight = '48px';
-    const buttonHeight = '48px';
+    const buttonHeight = '68px'; // Increased to account for padding
     const inputHeight = demoMode ? '56px' : '0px';
     const availableHeight = `calc(100% - ${headerHeight} - ${buttonHeight} - ${inputHeight})`;
     
     return (
-      <div className="w-full h-full flex flex-col" style={{ maxHeight: '100%', overflow: 'hidden' }}>
+      <div className="w-full h-full flex flex-col relative" style={{ maxHeight: '100%', overflow: 'hidden' }}>
         {/* Header - Fixed height */}
         <div 
           className="border-b border-gray-200 px-3 py-2 flex justify-between items-center bg-white"
@@ -171,7 +179,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               {demoMode ? "Type a message below!" : "Start talking to LangPal!"}
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 pb-4">
               {messages.map((message) => (
                 <div 
                   key={message.id}
@@ -248,9 +256,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         )}
         
-        {/* End button - Fixed height at bottom */}
+        {/* Sticky End button for mobile */}
         <div 
-          className="border-t border-gray-200 p-3 bg-white"
+          className="fixed bottom-0 left-0 right-0 border-t border-gray-200 p-3 bg-white shadow-lg"
           style={{ height: buttonHeight, minHeight: buttonHeight, maxHeight: buttonHeight }}
         >
           <button
