@@ -169,50 +169,52 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         </div>
         
-        {/* Messages area - Calculated height with scrolling */}
+        {/* Messages area - Only scrollable when content exceeds height */}
         <div 
-          className="px-3 py-2 overflow-y-auto"
+          className="px-3 py-2 flex flex-col"
           style={{ height: availableHeight, maxHeight: availableHeight }}
         >
           {messages.length === 0 ? (
-            <div className="text-center text-gray-500 text-sm py-4">
+            <div className="flex-1 flex items-center justify-center text-center text-gray-500 text-sm">
               {demoMode ? "Type a message below!" : "Start talking to LangPal!"}
             </div>
           ) : (
-            <div className="space-y-2 pb-4">
-              {messages.map((message) => (
-                <div 
-                  key={message.id}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+            <div className="overflow-y-auto flex-1">
+              <div className="space-y-2 pb-4">
+                {messages.map((message) => (
                   <div 
-                    className={`max-w-[80%] rounded-lg px-2 py-1 ${
-                      message.sender === 'user' 
-                        ? 'bg-blue-100 text-blue-900' 
-                        : 'bg-red-100 text-red-900'
-                    }`}
+                    key={message.id}
+                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <p className="text-xs leading-relaxed">{message.text}</p>
-                    <p className="text-xs opacity-60 mt-1">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              
-              {isProcessing && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 rounded-lg px-2 py-1">
-                    <div className="flex space-x-1">
-                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    <div 
+                      className={`max-w-[80%] rounded-lg px-2 py-1 ${
+                        message.sender === 'user' 
+                          ? 'bg-blue-100 text-blue-900' 
+                          : 'bg-red-100 text-red-900'
+                      }`}
+                    >
+                      <p className="text-xs leading-relaxed">{message.text}</p>
+                      <p className="text-xs opacity-60 mt-1">
+                        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </div>
                   </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
+                ))}
+                
+                {isProcessing && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-100 rounded-lg px-2 py-1">
+                      <div className="flex space-x-1">
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+              </div>
             </div>
           )}
         </div>
@@ -304,48 +306,52 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       </div>
       
-      {/* Chat messages container */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col space-y-4">
+      {/* Chat messages container - Only scrollable when content exceeds height */}
+      <div className="flex-1 p-4 flex flex-col">
         {messages.length === 0 ? (
-          <div className="text-center text-gray-500 my-8">
+          <div className="flex-1 flex items-center justify-center text-center text-gray-500 my-8">
             {demoMode ? "Type a message below to chat with LangPal!" : "Start talking to LangPal!"}
           </div>
         ) : (
-          messages.map((message) => (
-            <div 
-              key={message.id}
-              className={`flex w-full ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div 
-                className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                  message.sender === 'user' 
-                    ? 'bg-blue-100 text-blue-900' 
-                    : 'bg-red-100 text-red-900'
-                }`}
-              >
-                <p>{message.text}</p>
-                <p className="text-xs opacity-70 mt-1">
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </div>
-          ))
-        )}
-        
-        {isProcessing && (
-          <div className="flex justify-start items-center w-full">
-            <div className="bg-gray-100 rounded-lg px-4 py-2">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-              </div>
+          <div className="overflow-y-auto flex-1">
+            <div className="flex flex-col space-y-4">
+              {messages.map((message) => (
+                <div 
+                  key={message.id}
+                  className={`flex w-full ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div 
+                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                      message.sender === 'user' 
+                        ? 'bg-blue-100 text-blue-900' 
+                        : 'bg-red-100 text-red-900'
+                    }`}
+                  >
+                    <p>{message.text}</p>
+                    <p className="text-xs opacity-70 mt-1">
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              
+              {isProcessing && (
+                <div className="flex justify-start items-center w-full">
+                  <div className="bg-gray-100 rounded-lg px-4 py-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Always have a div at the bottom for scrolling */}
+              <div ref={messagesEndRef} />
             </div>
           </div>
         )}
-        
-        {/* Always have a div at the bottom for scrolling */}
-        <div ref={messagesEndRef} />
       </div>
       
       {/* Input area for demo mode */}
