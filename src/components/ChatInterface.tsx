@@ -81,7 +81,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Initial welcome state when not connected
   if (!isConnected) {
     return (
-      <div className="flex flex-col h-full w-full bg-white">
+      <div className="flex flex-col h-full w-full bg-white relative">
         {/* Header */}
         <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-gray-200">
           <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800">I'm Teddy!</h1>
@@ -94,8 +94,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </button>
         </div>
         
-        {/* Content */}
-        <div className="flex-1 flex flex-col justify-center p-4 md:p-6 space-y-6">
+        {/* Content - Add bottom padding to prevent overlap with sticky button */}
+        <div className="flex-1 flex flex-col justify-center p-4 md:p-6 space-y-6 pb-24">
           <div className="text-center">
             <p className="text-base md:text-lg text-gray-600 mb-6">
               Hello! I'm Teddy, your friend. I'm always bubbling with enthusiasm to learn, play, and join you on imaginative adventures. Let's embark on some fun together!
@@ -113,8 +113,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         </div>
         
-        {/* Start button */}
-        <div className="flex-shrink-0 p-4 border-t border-gray-200">
+        {/* Sticky Start button */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
           <button
             onClick={onStartConversation}
             disabled={isProcessing}
