@@ -73,8 +73,8 @@ const StatePopup: React.FC<StatePopupProps> = ({ state }) => {
             ) : (
               // Desktop: Full messages
               isListening 
-                ? 'Langpals is thinking of the best way to answer to your child💡' 
-                : 'Langpals is generating a magical response for your child 🪄'
+                ? 'Teddy is thinking of the best way to answer to your child💡' 
+                : 'Teddy is generating a magical response for your child 🪄'
             )}
           </p>
         </div>
