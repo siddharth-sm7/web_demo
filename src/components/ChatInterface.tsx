@@ -84,7 +84,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className="flex flex-col h-full w-full bg-white">
         {/* Header */}
         <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-gray-200">
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800">I'm LangPal!</h1>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800">I'm Teddy!</h1>
           <button 
             onClick={onToggleSound}
             className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
@@ -98,14 +98,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         <div className="flex-1 flex flex-col justify-center p-4 md:p-6 space-y-6">
           <div className="text-center">
             <p className="text-base md:text-lg text-gray-600 mb-6">
-              Hello! I'm LangPal, your friend. I'm always bubbling with enthusiasm to learn, play, and join you on imaginative adventures. Let's embark on some fun together!
+              Hello! I'm Teddy, your friend. I'm always bubbling with enthusiasm to learn, play, and join you on imaginative adventures. Let's embark on some fun together!
             </p>
             
             {demoMode && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <p className="font-semibold text-blue-800 mb-2">Demo Mode Active</p>
                 <p className="text-sm text-blue-700">
-                  This is a demonstration of LangPal. You can type messages to simulate 
+                  This is a demonstration of Teddy. You can type messages to simulate 
                   a conversation with the teddy bear.
                 </p>
               </div>
@@ -142,7 +142,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div className="flex-shrink-0 border-b border-gray-200 p-3 md:p-4">
         <div className="flex justify-between items-center">
           <h2 className="text-lg md:text-xl font-semibold text-gray-800">
-            Conversation with LangPal
+            Conversation with Teddy
           </h2>
           <div className="flex items-center space-x-2 md:space-x-3">
             {demoMode && (
@@ -178,7 +178,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             <div className="text-center text-gray-500 max-w-sm">
               <div className="text-4xl mb-3">💬</div>
               <p className="text-sm md:text-base">
-                {demoMode ? "Type a message below to chat with LangPal!" : "Start talking to LangPal!"}
+                {demoMode ? "Type a message below to chat with Teddy!" : "Start talking to Teddy!"}
               </p>
             </div>
           </div>
@@ -219,7 +219,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                     </div>
-                    <span className="text-xs text-gray-600 ml-2">LangPal is thinking...</span>
+                    <span className="text-xs text-gray-600 ml-2">Teddy is thinking...</span>
                   </div>
                 </div>
               </div>
